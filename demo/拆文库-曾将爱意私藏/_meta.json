@@ -1,0 +1,16 @@
+{
+  "version": "2.0",
+  "word_count": 8501,
+  "genre_detected": "追妻火葬场",
+  "created_at": "2026-06-07T00:00:00Z",
+  "stages_completed": [2, 3, 4, 5, 6],
+  "last_stage_in_progress": null,
+  "structure_counts": {
+    "beats": 5,
+    "hooks": 6,
+    "setup_clues": 6,
+    "character_archetypes": 3,
+    "reusable_structures": 5,
+    "reversal_type": "认知反转"
+  }
+}

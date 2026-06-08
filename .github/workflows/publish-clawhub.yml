@@ -1,0 +1,87 @@
+name: Publish skills to ClawHub
+
+# Publishes changed skills to ClawHub on release. Triggers:
+#   - pushing a version tag (v*)
+#   - publishing a GitHub Release
+#   - manual "Run workflow" button (with optional dry-run / bump / changelog)
+#   - PRs that edit THIS file → runs auth + a dry-run only (never publishes), as a self-test
+# story and browser-cdp are published manually and excluded here.
+on:
+  push:
+    tags: ['v*']
+  release:
+    types: [published]
+  pull_request:
+    paths: ['.github/workflows/publish-clawhub.yml']
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump for changed skills
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+      changelog:
+        description: Changelog text (optional; defaults to the ref name)
+        type: string
+        default: ''
+      dry_run:
+        description: Preview only — do not publish
+        type: boolean
+        default: false
+
+# Never let two publishes race (e.g. tag push + release published).
+concurrency:
+  group: clawhub-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    # Only the canonical repo may publish; skip on forks.
+    if: github.repository == 'worldwonderer/oh-story-claudecode'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install ClawHub CLI
+        run: npm install -g clawhub
+
+      - name: Authenticate
+        env:
+          CLAWHUB_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+        run: |
+          if [ -z "$CLAWHUB_TOKEN" ]; then
+            echo "::error::CLAWHUB_TOKEN secret is not set. Add it in repo Settings → Secrets → Actions."
+            exit 1
+          fi
+          clawhub login --token "$CLAWHUB_TOKEN" --no-browser
+          clawhub whoami
+
+      - name: Exclude manually-managed skills
+        # Affects only this ephemeral CI checkout, never your repo.
+        # `sync` scans the skills/ dir, so removing these folders excludes them.
+        run: |
+          for s in story browser-cdp; do rm -rf "skills/$s"; done
+
+      - name: Resolve changelog text
+        run: |
+          CL="${{ github.event.inputs.changelog }}"
+          if [ -z "$CL" ]; then CL="Synced from CI (${{ github.ref_name }})"; fi
+          echo "CLAWHUB_CHANGELOG=$CL" >> "$GITHUB_ENV"
+
+      - name: Show what would publish
+        run: clawhub --no-input sync --dry-run --bump "${{ github.event.inputs.bump || 'patch' }}"
+
+      - name: Publish changed skills
+        # Never publishes on pull_request events — those only run the dry-run above.
+        if: github.event_name != 'pull_request' && github.event.inputs.dry_run != 'true'
+        run: |
+          clawhub --no-input sync --all \
+            --bump "${{ github.event.inputs.bump || 'patch' }}" \
+            --changelog "$CLAWHUB_CHANGELOG"
