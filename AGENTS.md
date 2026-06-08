@@ -46,3 +46,27 @@
 4. 当前章节的情绪/节奏目标
 
 如果存在 `{书名}/追踪/上下文.md`，compact 后首先读取恢复上下文。
+
+## 同步上游
+
+当用户说「同步」「拉取上游」「pull claudecode」「更新项目」时执行。
+
+**远程**：`claudecode` → `D:\gz\skills\oh-story-claudecode`（已添加为 git remote）
+
+**流程**：
+1. 读取 `.sync-marker` 获取上次同步的 claudecode commit
+2. `git fetch claudecode` 获取最新
+3. `git diff --name-only <marker>..claudecode/main` 列出变更文件
+4. 过滤跳过的目录/文件：`.claude-plugin/`、`.claude/`、`.omc/`、`opencode.json`、`AGENTS.md`、`.story-deployed`
+5. 对每个文件复制 + 应用替换：
+   - `.claude/agents/` → `.opencode/agents/`
+   - `.claude/skills/` → `.opencode/skills/`
+   - `.claude-plugin/` → `.opencode/`
+   - `CLAUDE.md` → `AGENTS.md`
+   - `settings.local.json` → `opencode.json`
+6. 确认变更（优先处理 SKILL.md 中的 Agent/Task 语法冲突，保留 OpenCode 版本）
+7. `git add -A && git commit -m "sync: update from oh-story-claudecode"`
+8. `git push origin main`
+9. 更新 `.sync-marker` 为 claudecode 最新 HEAD commit
+
+**验证**：若步骤 3 返回空，回复「已是最新，无需同步」。
