@@ -61,10 +61,13 @@
 5. 对每个文件复制 + 应用替换：
    - `.claude/agents/` → `.opencode/agents/`
    - `.claude/skills/` → `.opencode/skills/`
-   - `.claude-plugin/` → `.opencode/`
    - `CLAUDE.md` → `AGENTS.md`
    - `settings.local.json` → `opencode.json`
-6. 确认变更（优先处理 SKILL.md 中的 Agent/Task 语法冲突，保留 OpenCode 版本）
+   - `Agent(` → `Task 工具 spawn `（改 Claude Code Agent 调用为 OpenCode Task tool spawn）
+6. 优先处理 SKILL.md 中的语法冲突，保留 OpenCode 版本模式：
+   - `.claude/agents/` 引用 → `.opencode/agents/`
+   - 路径中的 `CLAUDE.md` → `AGENTS.md`
+   - 对照已有 `.opencode/agents/` 引用风格做上下文感知修正
 7. `git add -A && git commit -m "sync: update from oh-story-claudecode"`
 8. `git push origin main`
 9. 更新 `.sync-marker` 为 claudecode 最新 HEAD commit
